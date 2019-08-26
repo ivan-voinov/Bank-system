@@ -3,9 +3,21 @@
  * Name: Ivan Voinov
  * Student id: 040935680
  * Course & section: CST8132 312
- * Assignment: Lab 5
- * Date: March 3, 2019
+ * Assignment: Lab 9
+ * Date: April 18, 2019
  */
+
+import java.util.ArrayList;
+import java.nio.file.Paths;
+import java.util.Scanner;
+import java.io.IOException; 
+import java.util.NoSuchElementException;
+import java.lang.IllegalStateException;
+import java.util.Formatter;
+import java.util.FormatterClosedException;
+import java.io.FileNotFoundException;
+import java.lang.SecurityException;
+import java.lang.StringBuilder;
 
 /**
  * The purpose of this class: to operate the bank accounts
@@ -15,88 +27,45 @@
  */
 public class Bank 
 {
-	private static BankAccount[] accounts;
-	private static int numAccounts = 0;
-	private int sizeBank = 100;
+	private ArrayList<BankAccount> accounts;
+	private int maxAccounts = 1000;
+	private Scanner fInput;
+	private Formatter fOutput;
 	
 	/**
 	 * Initializes the bank accounts array with the default size of 1000
 	 */
 	public Bank()
 	{
-		accounts = new BankAccount[sizeBank];
+		accounts = new ArrayList<BankAccount>(maxAccounts);
 	}
 	
 	/**
 	 * Initializes the bank accounts array with the size passed to this constructor
+	 * and sets it as a maximum size of the array
 	 * @param numAccs The size of the bank accounts array
 	 */
 	public Bank(int numAccs)
 	{
-		accounts = new BankAccount[numAccs];
+		accounts = new ArrayList<BankAccount>(numAccs);
+		maxAccounts = numAccs;
 	}
 	
 	/**
-	 * Prompts the user to enter the information about the new account and adds it to the array
-	 * @return True if a new account was successfully created or false if there is not enough room
+	 * Adds a new account to the bank accounts array if there is enough room
+	 * @param account Bank account to add
+	 * @return True if there is enough room for a new account, false otherwise
 	 */
-	public boolean addAccount()
-	{	
+	public boolean addAccount(BankAccount account)
+	{
 		//Checks if there is enough room for a new account
-		if (numAccounts >= sizeBank)
+		if (accounts.size() >= maxAccounts)
 		{
-			System.out.println("Error: no room ");
 			return false;
 		}
 		
-		//Tells the user to enter details about the new account
-		System.out.println("Enter details of account holder " + (numAccounts + 1));
-		System.out.println("==================================");
-		
-		//Inputs the type of the account
-		boolean inputIncorrect = true;
-		char accType = '0';
-		do
-		{
-			String userInput;
-			System.out.println("Enter account type (s for savings, c for checking): ");
-			
-			//Checks if the input is not empty and contains exactly 1 symbol
-			userInput = Assign1.input.nextLine();
-			if (!userInput.equals("") && userInput.length() == 1)
-			{
-				accType = userInput.toLowerCase().charAt(0);
-				if (accType == 'c' || accType == 's')
-					inputIncorrect = false;
-			}
-			
-		} while (inputIncorrect);
-		
-		switch (accType)
-		{
-			case 'c' :
-			{
-				accounts[numAccounts] = new ChequingAccount();
-				break;
-			}
-			case 's' : 
-			{
-				accounts[numAccounts] = new SavingsAccount();
-				break;
-			}
-		}
-		
-		//Tries to add the account
-		if (accounts[numAccounts].addBankAccount())
-		{
-			numAccounts++;
-			return true;
-		}
-		else 
-		{
-			System.out.println("Error: account not added ");
-			return false;
-		}
+		accounts.add(account);
+		return true;
 	}
 	
 	/**
@@ -104,110 +73,205 @@ public class Bank
 	 * @param accNumToCheck A number of the account to check
 	 * @return True if the number of the account is unique, false otherwise
 	 */
-	public static boolean numAccountIsUnique(int accNumToCheck)
+	public boolean numAccountIsUnique(long accNumToCheck)
 	{
-		for (int i = 0; i < numAccounts; ++i)
-		{
-			if (accounts[i].accNumber == accNumToCheck)
+		for (int i = 0; i < accounts.size(); ++i)
+			if (accounts.get(i).accNumber == accNumToCheck)
 				return false;
-		}
+		  
 		return true;
 	}
 	
 	/**
-	 * Prompts the user for the number of the account to find and tries to find it
-	 * @return Index of the account if found, -1 otherwise
+	 * Tries to find the account by its number. Returns its index if successful or -1 if not.
+	 * @param accNumber The unique number of the bank account
+	 * @return The index of the bank account
 	 */
-	public int findAccount()
+	public int findAccount(long accNumber)
 	{
-		int accNumber;
-		
-		//Inputs account number and 
-		//ensures the user inputs a correct number which is greater than zero
-		accNumber = Assign1.inputValidInt("Enter account number : ", "Invalid account number : ");
-		
-		for (int i = 0; i < numAccounts; ++i)
-			if (accounts[i].accNumber == accNumber)
+		for (int i = 0; i < accounts.size(); ++i)
+			if (accounts.get(i).accNumber == accNumber)
 				return i;
+
 		return -1;
 	}
 	
 	/**
-	 * Displays all the information about the requested account 
+	 * Displays all the information about the requested bank account 
+	 * @param accNumber The unique number of the bank account
 	 * @return Information about the requested 
 	 * bank account or error message if the account was not found
 	 */
-	public String displayAccount()
+	public String displayAccount(long accNumber)
 	{
-		int accNum = findAccount();
+		int accNum = findAccount(accNumber);
 		
 		if (accNum == -1)
 			return("Error: account does not exist ");
 		else
-			return accounts[accNum].toString();
+			return accounts.get(accNum).toString();
 	}
 	
 	/**
-	 * Prints the total number of the bank accounts and 
-	 * the information about every bank account in the array
+	 * Gets all the information about all bank accounts
+	 * @return The information about all bank accounts separated by new line characters
 	 */
-	public void printAccountDetails()
+	public StringBuilder getAccountDetails()
 	{
-		System.out.println("Baking System");
-		System.out.println("********************");
-		System.out.println("Number of Account holders: " + numAccounts);
+		StringBuilder accountDetails = new StringBuilder();
 		
-		for (int i = 0; i < numAccounts; ++i)
-			System.out.println(accounts[i]);
+		accountDetails.append("Banking System" + System.lineSeparator());
+		accountDetails.append("********************" + System.lineSeparator());
+		accountDetails.append("Number of Account holders: " +
+											accounts.size() + 
+											System.lineSeparator());
+		
+		for (int i = 0; i < accounts.size(); ++i)
+			accountDetails.append(accounts.get(i) + System.lineSeparator());
+		
+		return accountDetails;
 	}
 	
 	/**
-	 * Performs a deposit/withdraw operation for the selected bank account
-	 * or displays an error message if the account was not found
+	 * Tries to withdraw the requested amount of money from the requested bank account
+	 * @param accNumber The unique number of the bank account
+	 * @param amt The requested amount of money to withdraw
+	 * @return True if the transaction was successful, false otherwise
 	 */
-	public void updateAccount()
+	public boolean withdraw(long accNumber, double amt)
 	{
-		int accNum = findAccount();
+		int accountNumber = findAccount(accNumber);
 		
-		double amt = 0;
-
-		boolean inputIncorrect = true;
-			
-		//Ensures the input is an integer
-		do
-		{
-			System.out.println("Enter amount to deposit / withdraw " + 
-					 		   "(positive number to deposite, negative number to withdraw) : ");
-			
-			if (Assign1.input.hasNextDouble())
-			{
-				amt = Assign1.input.nextDouble();
-				inputIncorrect = false;
-			}
-			else 
-			{
-				System.out.println("Invalid amount: ");
-			}
-			Assign1.input.nextLine();
-			
-		} while(inputIncorrect);
+		if (accountNumber == -1)
+			return false;
 		
-		if (accNum == -1)
-			System.out.println("Error: account does not exist ");
 		else
-			//Checks if there is enough funds
-			if (amt < 0 && java.lang.Math.abs(amt) > accounts[accNum].balance)
-				System.out.println("Error: not enough funds ");
-			else 
-				accounts[accNum].updateBalance(amt);
+		{
+			accounts.get(accountNumber).withdraw(amt);
+			return true;
+		}
 	}
 	
 	/**
-	 * Performs a monthly update for every bank account
+	 * Tried to deposit the requested amount of money to the requested bank account
+	 * @param accNumber The unique number of the bank account
+	 * @param amt The requested amount of money to deposit
+	 * @return True if the transaction was successful, false otherwise
 	 */
-	public void monthlyUpdate()
+	public boolean deposit(long accNumber, double amt)
 	{
-		for (int i = 0; i < numAccounts; ++i)
-			accounts[i].monthlyAccountUpdate();
+		int accountNumber = findAccount(accNumber);
+		
+		if (accountNumber == -1)
+			return false;
+		
+		else
+		{
+			accounts.get(accountNumber).deposit(amt);
+			return true;
+		}
+	}
+	
+	/**
+	 * Performs a monthly update for every bank account and returns the results of it
+	 * @return Information about successful and failed updates
+	 */
+	public StringBuilder processMonthlyUpdate()
+	{
+		StringBuilder updateResults = new StringBuilder();
+		
+		if (accounts.size() == 0)
+			updateResults.append("No accounts to update");
+		else
+		{
+			for (int i = 0; i < accounts.size(); ++i)
+				updateResults.append(accounts.get(i).monthlyAccountUpdate() + System.lineSeparator());
+		}
+		
+		return updateResults;
+	}
+	
+	/**
+	 * Tries to open input file with the name "bankData.txt"
+	 * @throws IOException If an input or output exception occurred
+	 */
+	public void openInputFile() throws IOException
+	{
+		String fileName = "bankData.txt";
+		fInput = new Scanner(Paths.get(fileName));
+	}
+	
+	/**
+	 * Goes through all the records and creates a BankAccount object (savings or chequing)
+	 * with the information read from the file
+	 * @throws IllegalStateException If the file was closed
+	 * @throws NoSuchElementException If file improperly formed 
+	 * @throws NullPointerException If file was not initialized correctly
+	 */
+	public void readRecords() throws IllegalStateException, NoSuchElementException, NullPointerException
+	{
+		for (int i = accounts.size(); fInput.hasNext(); ++i)
+		{	
+			char accType = fInput.next().toLowerCase().charAt(0);
+				
+			switch (accType)
+			{
+				case 'c' :
+				{
+					accounts.add(new ChequingAccount());
+					break;
+				}
+				case 's' : 
+				{
+					accounts.add(new SavingsAccount());
+					break;
+				}
+			}
+			accounts.get(i).addBankAccountFromFile(fInput);
+		}
+	}
+	
+	/**
+	 * Closes the input file if it wasn't null
+	 */
+	public void closeInputFile()
+	{
+		if (fInput != null)
+			fInput.close();
+	}
+	
+	/**
+	 * Tries to open the output file with the name "bankotput.txt"
+	 * @throws FileNotFoundException If the file was not found
+	 * @throws SecurityException If there is a security violation
+	 * @throws FormatterClosedException If the formatter was closed
+	 */
+	public void openOutputFile() throws FileNotFoundException,
+										SecurityException,
+										FormatterClosedException
+	{
+		String fileName = "bankoutput.txt";
+		fOutput = new Formatter(fileName);
+	}
+	
+	/**
+	 * Prints the information about every bank account to the file
+	 * @throws NullPointerException If the file was not initialized correctly
+	 */
+	public void printRecordsToFile() throws NullPointerException
+	{
+		for (int i = 0; i < accounts.size(); ++i)
+		{
+			accounts.get(i).printRecordsToFile(fOutput);
+		}
+	}
+	
+	/**
+	 * Closes the output file if it wasn't null
+	 */
+	public void closeOutputFile()
+	{
+		if (fOutput != null)
+			fOutput.close();
 	}
 }

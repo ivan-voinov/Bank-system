@@ -3,12 +3,13 @@
  * Name: Ivan Voinov
  * Student id: 040935680
  * Course & section: CST8132 312
- * Assignment: Lab 5
- * Date: March 3, 2019
+ * Assignment: Lab 9
+ * Date: April 18, 2019
  */
 
 import java.text.DecimalFormat;
-import java.util.regex.Pattern;
+import java.util.Scanner;
+import java.util.Formatter;
 
 /**
  * The purpose of this class: an abstract base class for bank accounts
@@ -21,7 +22,7 @@ public abstract class BankAccount
 	/**
 	 * The owner of the bank account
 	 */
-	protected Person accHolder;
+	protected Client accHolder;
 	
 	/**
 	 * The current balance of the account
@@ -29,98 +30,63 @@ public abstract class BankAccount
 	protected double balance;
 	
 	/**
-	 * The unique account number up to 8 digits long
+	 * The unique non-negative account number up to 8 digits long
 	 */
-	protected int accNumber;
+	protected long accNumber; 
 	
 	/**
-	 * Gets the current balance of the bank account
-	 * @return Current balance of the bank account
+	 * Default empty constructor
 	 */
-	public double getBalance()
+	public BankAccount()
+	{}
+	
+	/**
+	 * Creates a bank account with the specified information
+	 * @param accHolder The client object which includes full name, email and phone
+	 * @param balance The balance of the bank account
+	 * @param accNumber The unique number of the bank account
+	 */
+	public BankAccount(Client accHolder, double balance, long accNumber)
 	{
-		return balance;
+		this.accHolder = accHolder;
+		this.balance = balance;
+		this.accNumber = accNumber;
 	}
 	
 	/**
-	 * Prompts the user for the bank account information and creates an account
-	 * @return True if the account was created successfully
+	 * Tries to read the bank account information from the file
+	 * @param fInput The file to read from
 	 */
-	public boolean addBankAccount()
+	public void addBankAccountFromFile(Scanner fInput)
 	{
-		//Inputs account number and 
-		//ensures the user inputs a correct number which is greater than zero and up to 8 digits
-		do
-		{
-			accNumber = Assign1.inputValidInt("Enter account number : ", "Invalid account number : ");
-			
-			if (!Bank.numAccountIsUnique(accNumber))
-				System.out.println("This account number already exists");
-			
-			if (Integer.toString(accNumber).length() > 8)
-				System.out.println("Invalid account number : ");
-			
-		} while (!Bank.numAccountIsUnique(accNumber) || Integer.toString(accNumber).length() > 8);
+		long accNumber = fInput.nextLong();
+		String firstName = fInput.next();
+		String lastName = fInput.next();
+		long phoneNumber = fInput.nextLong();
+		String email = fInput.next();
+		double balance = fInput.nextDouble();
 		
-		//Inputs first name
-		System.out.println("Enter first name of account holder : ");
-		String firstName = Assign1.input.nextLine();
+		this.accHolder = new Client(firstName, lastName, email, phoneNumber);
+		this.accNumber = accNumber;
+		this.balance = balance;
+	}
+	
+	/**
+	 * Prints the information about the bank account to the file
+	 * @param fOutput The file to print the information to
+	 */
+	public void printRecordsToFile(Formatter fOutput)
+	{
+		if (this instanceof ChequingAccount)
+			fOutput.format("%c ", 'C');
+		else
+			fOutput.format("%c ", 'S');
 		
-		//Inputs last name
-		System.out.println("Enter last name of account holder : ");
-		String lastName = Assign1.input.nextLine();
-		
-		//Inputs phone number
-		long phoneNum = 0;
-		do
-		{
-			boolean inputIncorrect = true;
-			
-			//Ensures the input is a long
-			do
-			{
-				System.out.println("Enter phone number : ");
-				
-				if (Assign1.input.hasNextLong())
-				{
-					phoneNum = Assign1.input.nextLong();
-					inputIncorrect = false;
-				}
-				else 
-				{
-					System.out.println("Invalid phone number : ");
-				}
-				Assign1.input.nextLine();
-					
-			} while(inputIncorrect);
-				
-			//Checks if the phone is exactly 10 digits
-			if (Long.toString(phoneNum).length() != 10)
-				System.out.println("Invalid phone number : ");
-				
-		} while(phoneNum < 0 || Long.toString(phoneNum).length() != 10);
-		
-		//Inputs email and ensures it is valid (has a format of _@_._)
-		String email;
-		boolean emailInvalid = true;
-		
-		do
-		{
-			System.out.println("Enter Email address : ");
-			email = Assign1.input.nextLine();
-			//"." = any character, "+" = one or many, \\ = quote the character
-			emailInvalid = !Pattern.matches(".+@.+\\..+", email);
-			
-		} while (emailInvalid);
-		
-		//Inputs balance
-		balance = Assign1.inputValidDouble("Enter opening balance : ", "Invalid opening balance : ");
-		
-		//Creates a new person with the data the user entered
-		accHolder = new Person(firstName, lastName, phoneNum, email);
-		
-		//Account created successfully
-		return true;
+		fOutput.format("%s %d %s %.2f", 
+					   accHolder.getName(),
+					   accNumber,
+					   accHolder.getEmail(),
+					   balance);
 	}
 	
 	/**
@@ -135,7 +101,6 @@ public abstract class BankAccount
 		//Displays all the information about the bank account
 		String print = "AccountNumber: "  + accNumber               + 
 					   " Name: "          + accHolder.getName()     +
-					   " Phone Number: "  + accHolder.getPhoneNum() + 
 					   " Email Address: " + accHolder.getEmail()    + 
 					   " Balance: "       + df.format(balance)      +
 					   "$";
@@ -144,16 +109,42 @@ public abstract class BankAccount
 	}
 	
 	/**
-	 * Updates the balance of the bank account by the passed amount
-	 * @param amt The amount to deposit (if positive) or withdraw (if negative)
+	 * Increases the balance by the amount of money and 
+	 * displays an error if the amount is negative
+	 * @param amt The amount of money to deposit
+	 * @throws TransactionIllegalArgumentException If the amount to deposit is negative
 	 */
-	public void updateBalance(double amt)
+	public void deposit(double amt) throws TransactionIllegalArgumentException
 	{
-		balance += amt;
+		if (amt < 0)
+			throw new TransactionIllegalArgumentException(accNumber, amt, "Error: amount is negative");
+		else
+			balance += amt;
 	}
 	
 	/**
-	 * Applies changes to balance and recalculates it
+	 * Reduces the balance by the amount of money,
+	 * and displays an error if the amount to withdraw is negative or greater than the balance
+	 * @param amt The amount of money to withdraw
+	 * @throws TransactionIllegalArgumentException 
+	 * If the amount to withdraw is negative or greater than balance
 	 */
-	public abstract void monthlyAccountUpdate();
+	public void withdraw(double amt) throws TransactionIllegalArgumentException
+	{
+		if (amt < 0)
+			throw new TransactionIllegalArgumentException
+				(accNumber, amt, "Error: amount is negative");
+		else
+			if (amt > balance)
+				throw new TransactionIllegalArgumentException
+					(accNumber, amt, "Error: amount is greater than balance");
+		else
+			balance -= amt;
+	}
+	
+	/**
+	 * Applies changes to balance and recalculates it. Returns the results of the update
+	 * @return The information about the results of the update
+	 */
+	public abstract String monthlyAccountUpdate();
 }

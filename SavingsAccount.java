@@ -3,11 +3,14 @@
  * Name: Ivan Voinov
  * Student id: 040935680
  * Course & section: CST8132 312
- * Assignment: Lab 5
- * Date: March 3, 2019
+ * Assignment: Lab 9
+ * Date: April 18, 2019
  */
 
 import java.text.DecimalFormat;
+import java.util.Scanner;
+import java.util.Formatter;
+import java.util.Random;
 
 /**
  * The purpose of this class: to accumulate money on a bank account according to a monthly interest rate
@@ -20,32 +23,68 @@ public class SavingsAccount extends BankAccount
 	
 	private double interestRate;
 	private double minBalance;
+	private Random rnd;
 	
 	/**
-	 * Prompts the user for the general bank account information,
-	 * the interest rate and the minimum balance
-	 * @return True if the savings account was added successfully
+	 * Initializes the interest rate with a value between 0 and 1
+	 */
+	public SavingsAccount()
+	{
+		generateRandomInterestRate();
+	}
+	
+	/**
+	 * Creates a savings account with the specified information
+	 * @param accHolder The client object which includes full name, email and phone
+	 * @param balance The balance of the bank account
+	 * @param accNumber The unique number of the bank account
+	 * @param minBalance The minimum balance required to accumulate money
+	 */
+	public SavingsAccount(Client accHolder, double balance, long accNumber, double minBalance)
+	{
+		super(accHolder, balance, accNumber);
+		this.minBalance = minBalance;
+		
+		generateRandomInterestRate();
+	}
+	
+	/**
+	 * Generates a random interest rate between 0 and 1
+	 */
+	public void generateRandomInterestRate()
+	{
+		rnd = new Random();
+		
+		//Generates a random interest rate between 0 and 1
+		interestRate = rnd.nextDouble();
+	}
+	
+	/**
+	 * Tries to read the savings bank account information from the file
+	 * @param fInput The file to read from
 	 */
 	@Override
-	public boolean addBankAccount()
+	public void addBankAccountFromFile(Scanner fInput)
 	{
-		super.addBankAccount();
+		super.addBankAccountFromFile(fInput);
 		
-		//Inputs minBalance
-		minBalance = Assign1.inputValidDouble("Enter the minimum balance : ", "Invalid minimum balance : ");
+		double interestRate = fInput.nextDouble();
+		double minBalance = fInput.nextDouble();
 		
-		//Inputs interest rate
-		do
-		{
-			interestRate = Assign1.inputValidDouble("Enter interest rate(should be a number in (0,1)): ",
-													"Invalid interest rate : ");
-			
-			if (interestRate >= 1 || interestRate == 0)
-				System.out.println("Invalid interest rate : ");
-			
-		} while (interestRate >= 1 || interestRate == 0);
+		this.minBalance = minBalance;
+		this.interestRate = interestRate;
+	}
+	
+	/**
+	 * Prints the information about the bank account and the minimum balance to file
+	 * and moves to the next line
+	 */
+	@Override
+	public void printRecordsToFile(Formatter fOutput)
+	{
+		super.printRecordsToFile(fOutput);
 		
-		return true;
+		fOutput.format(" %.2f%n", minBalance);
 	}
 	
 	/**
@@ -66,14 +105,20 @@ public class SavingsAccount extends BankAccount
 	}
 	
 	/**
-	 * Increases the balance by the monthly interest rate if the it is more than the minimum balance
+	 * Increases the balance by the monthly interest rate and returns the results of the update
+	 * @return Message which includes the account number, success or fail of the update, and
+	 * if not successful, the reason of failure
 	 */
 	@Override
-	public void monthlyAccountUpdate()
+	public String monthlyAccountUpdate()
 	{
 		if (balance > minBalance)
+		{
 			balance *= 1 + interestRate;
+			return "Account " + accNumber + ": monthly update SUCCESSFUL";
+		}
 		else
-			System.out.println("Account " + accNumber + " error : balance is not more than minimum balance ");
+			return "Account " + accNumber + 
+				": monthly update FAILED: balance is not more than the minimum balance";
 	}
 }
